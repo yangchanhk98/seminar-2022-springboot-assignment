@@ -10,26 +10,29 @@ import javax.persistence.*
 @Entity
 @Table(name = "users")
 class UserEntity(
-    @Column(nullable = false)
+//    @Column(nullable = false)
     var username: String,
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     val email: String,
-    @Column(nullable = false)
+//    @Column(nullable = false)
     var password: String,
-    @OneToMany(mappedBy = "userEntity", cascade = [CascadeType.REMOVE])
-    var userSeminarEntities: MutableList<UserSeminarEntity> = mutableListOf(),
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "participant_profile")
+    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.REMOVE, CascadeType.PERSIST])
+    @JoinColumn(name = "participantProfileEntityId")
     var participantProfileEntity: ParticipantProfileEntity? = null,
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "instructor_profile")
+    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.REMOVE, CascadeType.PERSIST])
+    @JoinColumn(name = "instructorProfileEntityId")
     var instructorProfileEntity: InstructorProfileEntity? = null,
     @CreationTimestamp
     override var createdAt: LocalDateTime? = LocalDateTime.now(),
     @CreationTimestamp
-    override var modifiedAt: LocalDateTime? = createdAt
-) : BaseTimeEntity() {
+    override var modifiedAt: LocalDateTime? = createdAt,
 
+) : BaseTimeEntity() {
+    
+    lateinit var role: String
+    
+    @OneToMany(mappedBy = "userEntity", cascade = [CascadeType.REMOVE])
+    var userSeminarEntities: MutableList<UserSeminarEntity> = mutableListOf()
 
     
 

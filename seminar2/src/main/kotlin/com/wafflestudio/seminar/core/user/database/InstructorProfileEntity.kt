@@ -7,22 +7,21 @@ import java.time.LocalDateTime
 import javax.persistence.*
 
 @Entity
-@Table(name = "instructorprofiles")
+@Table(name = "instructorProfiles")
 class InstructorProfileEntity(
-    @Column(nullable = false)
-    var username: String,
-    @Column(unique = true, nullable = false)
-    val email: String,
-    @Column(nullable = false)
-    var password: String,
-    @OneToOne(mappedBy = "instructorProfileEntity")
-    var userEntity: UserEntity,
+    @Column
+    var company: String,
+    @Column
+    var year: Int?,
     @CreationTimestamp
     override var createdAt: LocalDateTime? = LocalDateTime.now(),
     @CreationTimestamp
-    override var modifiedAt: LocalDateTime? = createdAt
+    override var modifiedAt: LocalDateTime? = createdAt,
+
 ) : BaseTimeEntity() {
 
+    @OneToOne(mappedBy = "instructorProfileEntity")
+    var userEntity: UserEntity? = null
 
     
 

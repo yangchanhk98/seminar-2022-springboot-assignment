@@ -6,65 +6,142 @@ import com.wafflestudio.seminar.common.Seminar404
 import com.wafflestudio.seminar.common.Seminar409
 import com.wafflestudio.seminar.config.AuthConfig
 import com.wafflestudio.seminar.core.user.api.request.UserDto
-import com.wafflestudio.seminar.core.user.database.UserEntity
-import com.wafflestudio.seminar.core.user.database.UserRepository
+import com.wafflestudio.seminar.core.user.database.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.util.*
 
 interface UserService {
-    fun signUp(email: String, username: String, password: String): AuthToken
+    fun signUp(signUpRequest: UserDto.SignUpRequest): AuthToken
     fun logIn(email: String, password: String): AuthToken
-    fun getMe(userId: Long): UserDto.Response
+    fun getMe(userId: Long): UserDto.UserResponse
+    fun getProfile(userId: Long): UserDto.UserProfileResponse
+    fun updateProfile(req: UserDto.UpdateRequest, userId: Long): UserDto.UserProfileResponse
+    fun registerParticipant(req: UserDto.RegisterParticipantRequest, userId: Long): UserDto.UserProfileResponse
 }
 
 @Service
 class UserServiceImpl(
     private val userRepository: UserRepository,
+    private val participantProfileRepository: ParticipantProfileRepository,
+    private val instructorProfileRepository: InstructorProfileRepository,
     private val authConfig: AuthConfig,
-    private val authTokenService: AuthTokenService
+    private val authTokenService: AuthTokenService,
+    private val userRepositorySupport: UserRepositorySupport
 ) : UserService {
 
     @Transactional
-    override fun signUp(email: String, username: String, password: String): AuthToken {
-        if (email.isEmpty() || username.isEmpty() || password.isEmpty()) {
-            throw Seminar400("이름/이메일을 모두 입력해주세요.")
-        } else if (userRepository.existsByEmail(email)) {
-            throw Seminar409("이미 존재하는 이메일입니다.")
-        } else {
-            val authToken : AuthToken = authTokenService.generateTokenByUsername(username)
-            userRepository.save(
-                UserEntity(
-                    username,
-                    email,
-                    authConfig.passwordEncoder().encode(password)
-                )
-            )
-            return authToken
+    override fun signUp(req: UserDto.SignUpRequest): AuthToken {
+        if (userRepository.existsByEmail(req.email!!)) {
+            throw Seminar409("This email already exists.")
         }
+        val userEntity = UserEntity(
+            username = req.username!!,
+            email = req.email,
+            password = authConfig.passwordEncoder().encode(req.password)
+        )
+        when (req.role) {
+            "PARTICIPANT" -> {
+                userEntity.role = req.role
+                userEntity.participantProfileEntity = ParticipantProfileEntity(
+                    university = req.university ?: "",
+                    isRegistered = req.isRegistered ?: true
+                )
+            }
+            "INSTRUCTOR" -> {
+                userEntity.role = req.role
+                userEntity.instructorProfileEntity = InstructorProfileEntity(
+                    company = req.company ?: "",
+                    year = req.year
+                )
+            }
+            else -> throw Seminar400("Role should be 'PARTICIPANT' or 'INSTRUCTOR'.")
+        }
+        userRepository.save(userEntity)
+        return authTokenService.generateTokenByEmail(req.email)
+
     }
 
     @Transactional
     override fun logIn(email: String, password: String): AuthToken {
-        val entity = userRepository.findByEmail(email)
-        if (entity == null) {
-            throw Seminar404("존재하지 않는 이메일입니다.")
-        } else if (!authConfig.passwordEncoder().matches(password, entity.password)) {
+        val entity = userRepository.findByEmail(email) ?: throw Seminar404("존재하지 않는 이메일입니다.")
+        if (!authConfig.passwordEncoder().matches(password, entity.password)) {
             throw Seminar401("비밀번호가 틀립니다.")
-        } else {
-            val modifiedToken : AuthToken = authTokenService.generateTokenByEmail(entity.email)
-            entity.modifiedAt = LocalDateTime.now()
-            return modifiedToken
         }
+        val modifiedToken: AuthToken = authTokenService.generateTokenByEmail(entity.email)
+        entity.modifiedAt = LocalDateTime.now()
+        return modifiedToken
     }
 
     @Transactional
-    override fun getMe(userId: Long) : UserDto.Response {
-//        TODO("Not yet implemented")
-        val entity = userRepository.findById(userId)
-        if (entity.isEmpty) {
-            throw Seminar404("존재하지 않는 회원입니다.")
-        }
-        return UserDto.Response(userId, entity.get().username, entity.get().email, entity.get().modifiedAt)
+    override fun getMe(userId: Long): UserDto.UserResponse {
+        val userEntityOptional: Optional<UserEntity> = userRepository.findById(userId)
+//        if (userEntityOptional.isEmpty) {
+//            throw Seminar404("This userId doesn't exist.")
+//        }
+        val userEntity: UserEntity = userEntityOptional.get()
+        return UserDto.UserResponse(
+            id = userId,
+            username = userEntity.username,
+            email = userEntity.email,
+            lastLogin = userEntity.modifiedAt!!.withNano(0)
+        )
     }
+
+    @Transactional
+    override fun getProfile(userId: Long): UserDto.UserProfileResponse {
+//        if (userRepository.findById(userId).isEmpty) {
+//            throw Seminar404("This userId doesn't exist.")
+//        }
+        return userRepositorySupport.getProfile(userId)
+    }
+
+    @Transactional
+    override fun updateProfile(req: UserDto.UpdateRequest, userId: Long): UserDto.UserProfileResponse {
+        val userEntityOptional: Optional<UserEntity> = userRepository.findById(userId)
+//        if (userEntityOptional.isEmpty) {
+//            throw Seminar404("This userId doesn't exist.")
+//        }
+        val userEntity: UserEntity = userEntityOptional.get()
+        val participantProfileEntity = userEntity.participantProfileEntity
+        val instructorProfileEntity = userEntity.instructorProfileEntity
+        if (participantProfileEntity != null) {
+            participantProfileEntity.university = req.university ?: ""
+            participantProfileRepository.save(participantProfileEntity)
+        }
+        if (instructorProfileEntity != null) {
+            instructorProfileEntity.company = req.company ?: ""
+            instructorProfileEntity.year = req.year
+            instructorProfileRepository.save(instructorProfileEntity)
+        }
+        if (!req.username.isNullOrBlank()) {
+            userEntity.username = req.username
+        }
+        if (!req.password.isNullOrBlank()) {
+            userEntity.password = req.password
+        }
+        userRepository.save(userEntity)
+        return userRepositorySupport.getProfile(userId)
+    }
+
+    @Transactional
+    override fun registerParticipant(
+        req: UserDto.RegisterParticipantRequest,
+        userId: Long
+    ): UserDto.UserProfileResponse {
+        val userEntityOptional: Optional<UserEntity> = userRepository.findById(userId)
+        val userEntity: UserEntity = userEntityOptional.get()
+        if (userEntity.role == "PARTICIPANT") {
+            throw Seminar409("You are already a participant.")
+        }
+        userEntity.role = "PARTICIPANT"
+        userEntity.participantProfileEntity = ParticipantProfileEntity(
+            university = req.university ?: "",
+            isRegistered = req.isRegistered ?: true
+        )
+        userRepository.save(userEntity)
+        return userRepositorySupport.getProfile(userId)
+    }
+
 }

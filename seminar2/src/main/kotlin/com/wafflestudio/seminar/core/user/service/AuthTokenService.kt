@@ -68,8 +68,8 @@ class AuthTokenService(
         }
         val jwsClaims : Jws<Claims> = parse(authToken)
         val email = jwsClaims.body.get("email", String::class.java)
-        val userEntity = userRepository.findByEmail(email)
-        return userEntity!!.id
+        val userEntity = userRepository.findByEmail(email) ?: throw AuthException("토큰이 유효하지 않습니다.")
+        return userEntity.id
     }
 
     /**

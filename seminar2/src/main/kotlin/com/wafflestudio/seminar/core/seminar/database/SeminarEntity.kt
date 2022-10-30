@@ -11,23 +11,19 @@ import javax.persistence.*
 @Entity
 @Table(name = "seminars")
 class SeminarEntity(
-    @Column(unique = true, nullable = false)
     var name: String,
-    @Column(nullable = false)
     var capacity: Int,
-    @Column(nullable = false)
     var count: Int,
-    val time: String,
+    var time: String,
     var online: Boolean = true,
-    @OneToMany(mappedBy = "seminarEntity", cascade = [CascadeType.REMOVE])
-    var userSeminarEntities: MutableList<UserSeminarEntity> = mutableListOf(),
+    var managerId: Long,
     @CreationTimestamp
     override var createdAt: LocalDateTime? = LocalDateTime.now(),
     @CreationTimestamp
     override var modifiedAt: LocalDateTime? = createdAt
 ) : BaseTimeEntity() {
 
-
-    
-
+    @OneToMany(mappedBy = "seminarEntity", cascade = [CascadeType.REMOVE])
+    var userSeminarEntities: MutableList<UserSeminarEntity> = mutableListOf()  
+    var participantCount: Int = 0
 }

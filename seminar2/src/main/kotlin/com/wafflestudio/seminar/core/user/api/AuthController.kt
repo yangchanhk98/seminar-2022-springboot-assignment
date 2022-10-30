@@ -5,7 +5,9 @@ import com.wafflestudio.seminar.common.UserContext
 import com.wafflestudio.seminar.core.user.api.request.UserDto
 import com.wafflestudio.seminar.core.user.service.AuthToken
 import com.wafflestudio.seminar.core.user.service.UserService
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
 
 @RestController
 class AuthController(
@@ -14,10 +16,9 @@ class AuthController(
 
     @PostMapping("/api/v1/signup")
     fun signUp(
-        @RequestBody req: UserDto.SignUpRequest
+        @RequestBody @Valid req: UserDto.SignUpRequest
     ): AuthToken {
-//        TODO("회원가입을 구현해주세요.")
-        return userService.signUp(req.email, req.username, req.password)
+        return userService.signUp(req)
     }
 
     @PostMapping("/api/v1/signin")
@@ -34,7 +35,7 @@ class AuthController(
     fun getMe(
         @RequestHeader(value = "Authorization") authorization: String,
         @UserContext userId: Long
-    ) : UserDto.Response {
+    ) : UserDto.UserResponse {
 //        TODO("인증 토큰을 바탕으로 유저 정보를 적당히 처리해서, 본인이 잘 인증되어있음을 알려주세요.")
         return userService.getMe(userId)
     }
