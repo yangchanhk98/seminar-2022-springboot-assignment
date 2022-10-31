@@ -4,17 +4,14 @@ import com.wafflestudio.seminar.common.BaseTimeEntity
 import com.wafflestudio.seminar.core.userseminar.database.UserSeminarEntity
 import org.hibernate.annotations.CreationTimestamp
 import java.time.LocalDateTime
-import java.util.*
 import javax.persistence.*
 
 @Entity
 @Table(name = "users")
 class UserEntity(
-//    @Column(nullable = false)
     var username: String,
     @Column(unique = true)
     val email: String,
-//    @Column(nullable = false)
     var password: String,
     @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.REMOVE, CascadeType.PERSIST])
     @JoinColumn(name = "participantProfileEntityId")

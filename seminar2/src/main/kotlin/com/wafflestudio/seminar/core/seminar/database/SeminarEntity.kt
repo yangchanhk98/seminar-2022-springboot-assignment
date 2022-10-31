@@ -1,8 +1,6 @@
 package com.wafflestudio.seminar.core.seminar.database
 
 import com.wafflestudio.seminar.common.BaseTimeEntity
-import com.wafflestudio.seminar.core.user.api.request.UserDto
-import com.wafflestudio.seminar.core.user.database.UserEntity
 import com.wafflestudio.seminar.core.userseminar.database.UserSeminarEntity
 import org.hibernate.annotations.CreationTimestamp
 import java.time.LocalDateTime
@@ -25,5 +23,5 @@ class SeminarEntity(
 
     @OneToMany(mappedBy = "seminarEntity", cascade = [CascadeType.REMOVE])
     var userSeminarEntities: MutableList<UserSeminarEntity> = mutableListOf()  
-    var participantCount: Int = 0
+    var participantCount: Long = 0
 }

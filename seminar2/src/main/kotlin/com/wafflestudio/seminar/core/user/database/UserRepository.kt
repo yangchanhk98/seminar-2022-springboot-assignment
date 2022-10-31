@@ -4,7 +4,6 @@ package com.wafflestudio.seminar.core.user.database
 import com.querydsl.core.types.Projections
 import com.wafflestudio.seminar.common.QueryDslConfig
 import com.wafflestudio.seminar.core.seminar.api.request.SeminarDto
-import com.wafflestudio.seminar.core.seminar.database.QSeminarEntity.seminarEntity
 import com.wafflestudio.seminar.core.user.api.request.UserDto
 import com.wafflestudio.seminar.core.user.database.QInstructorProfileEntity.instructorProfileEntity
 import com.wafflestudio.seminar.core.user.database.QParticipantProfileEntity.participantProfileEntity

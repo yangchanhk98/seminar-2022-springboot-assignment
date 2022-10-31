@@ -4,8 +4,6 @@ import com.wafflestudio.seminar.common.Authenticated
 import com.wafflestudio.seminar.common.UserContext
 import com.wafflestudio.seminar.core.seminar.api.request.SeminarDto
 import com.wafflestudio.seminar.core.seminar.service.SeminarService
-import com.wafflestudio.seminar.core.user.api.request.UserDto
-import com.wafflestudio.seminar.core.user.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*

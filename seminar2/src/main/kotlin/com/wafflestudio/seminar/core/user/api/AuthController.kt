@@ -5,7 +5,6 @@ import com.wafflestudio.seminar.common.UserContext
 import com.wafflestudio.seminar.core.user.api.request.UserDto
 import com.wafflestudio.seminar.core.user.service.AuthToken
 import com.wafflestudio.seminar.core.user.service.UserService
-import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 
@@ -26,7 +25,6 @@ class AuthController(
         @RequestHeader(value = "email") email: String,
         @RequestHeader(value = "password") password: String
     ): AuthToken {
-//        TODO("회원가입을 진행한 유저가 로그인할 경우, JWT를 생성해서 내려주세요.")
         return userService.logIn(email, password)
     }
 
@@ -36,7 +34,6 @@ class AuthController(
         @RequestHeader(value = "Authorization") authorization: String,
         @UserContext userId: Long
     ) : UserDto.UserResponse {
-//        TODO("인증 토큰을 바탕으로 유저 정보를 적당히 처리해서, 본인이 잘 인증되어있음을 알려주세요.")
         return userService.getMe(userId)
     }
 

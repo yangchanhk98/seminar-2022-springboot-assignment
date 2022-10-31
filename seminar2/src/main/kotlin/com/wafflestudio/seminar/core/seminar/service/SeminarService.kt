@@ -73,7 +73,7 @@ class SeminarServiceImpl(
     @Transactional
     override fun updateSeminar(userId: Long, req: SeminarDto.UpdateSeminarRequest): SeminarDto.SeminarProfileResponse {
         val seminarEntity: SeminarEntity = seminarRepository.findByManagerId(userId)
-            ?: throw Seminar403("Only instructor can make a seminar.")
+            ?: throw Seminar403("You don't conduct any seminar. Thus you can not update a seminar.")
         if (req.time != null) {
             val formatter = DateTimeFormatter.ofPattern("HH:mm")
             try {
@@ -87,6 +87,7 @@ class SeminarServiceImpl(
         req.count?.let { seminarEntity.count = it }
         req.time?.let { seminarEntity.time = it }
         req.online?.let { seminarEntity.online = it }
+        seminarEntity.modifiedAt = LocalDateTime.now()
         val seminarId = seminarRepository.save(seminarEntity).id
         return seminarRepositorySupport.getSeminarById(seminarId)
     }
@@ -120,20 +121,23 @@ class SeminarServiceImpl(
         val seminarEntity = seminarRepository.findById(seminarId).get()
         for (userSeminarEntity in userEntity.userSeminarEntities) {
             if (userSeminarEntity.seminarEntity == seminarEntity) {
-                throw Seminar400("You are already in this seminar as a " + userSeminarEntity.role + ".")
+                if (userSeminarEntity.isActive)
+                    throw Seminar400("You are already in this seminar as a " + userSeminarEntity.role + ".")
+                else
+                    throw Seminar400("You dropped this seminar before. You can not participate in this seminar again.")
             }
         }
         if (role == "PARTICIPANT") {
             if (userEntity.participantProfileEntity == null) {
                 throw Seminar403("Only participant can participate in a seminar")
             }
-            if (userEntity.participantProfileEntity!!.isRegistered) {
+            if (!userEntity.participantProfileEntity!!.isRegistered) {
                 throw Seminar403("You should register to participate in a seminar.")
             }
             if (seminarEntity.capacity <= seminarEntity.participantCount) {
                 throw Seminar400("This seminar is full. You can not participate in this seminar.")
             }
-            seminarEntity.participantCount += 1
+            seminarEntity.participantCount += 1L
             seminarRepository.save(seminarEntity)
         } else {
             if (userEntity.instructorProfileEntity == null) {
@@ -170,6 +174,8 @@ class SeminarServiceImpl(
             if (userSeminarEntity.seminarEntity == seminarEntity) {
                 userSeminarEntity.isActive = false
                 userSeminarEntity.droppedAt = LocalDateTime.now()
+                userSeminarEntity.modifiedAt = LocalDateTime.now()
+                seminarEntity.participantCount -= 1L
                 userSeminarRepository.save(userSeminarEntity)
                 break
             }
